@@ -5,3 +5,4 @@ ec2_subnets = [
 ]
 ec2_root_block_size = 10
 vpc_id = "vpc-04f99e5833c3a909b"
+wordpress_ec2_ami = "ami-0c1740a1387a3bbd8"
