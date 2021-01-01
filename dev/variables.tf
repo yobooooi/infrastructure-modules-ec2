@@ -21,11 +21,22 @@ variable "vpc_id"{
     description= ""
 }
 
-variable "ami_owners" {
-    description= ""
-    default = ["296274010522"]
+variable "wordpress_ec2_ami" {
+    description= "asg ami to be used"
+    default = "ami-01720b5f421cf0179"
 }
 
-variable "ami_name_filter" {
-    default = ["dev-wordpress-latest-AMZN-baseimage-*"]
+variable "addiontal_asg_tags" {
+  default = [
+    {
+      key                 = "Application"
+      value               = "Terratest-WordPress"
+      propagate_at_launch = true
+    },
+    {
+      key                 = "Owner"
+      value               = "Adan"
+      propagate_at_launch = true
+    },
+  ]
 }
