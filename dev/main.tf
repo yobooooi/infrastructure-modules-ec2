@@ -1,5 +1,5 @@
 resource "aws_launch_configuration" "wordpress_ec2" {
-    image_id             = data.aws_ami.wordpress_ami.id
+    image_id             = var.wordpress_ec2_ami
     instance_type        = var.ec2_instance_type
     iam_instance_profile = aws_iam_instance_profile.wordpress_ec2_instance_profile.id
 
@@ -21,6 +21,7 @@ resource "aws_launch_configuration" "wordpress_ec2" {
 
 # creating autoscaling group and associating it to the target group cofigured for the
 # application load balancer
+
 resource "aws_autoscaling_group" "wordpress_ec2_autoscaling_group" {
     name                 = "asg-wordpress-${var.application}"
     max_size             = "2"
@@ -29,14 +30,20 @@ resource "aws_autoscaling_group" "wordpress_ec2_autoscaling_group" {
     vpc_zone_identifier  = var.ec2_subnets
     launch_configuration = aws_launch_configuration.wordpress_ec2.name
     health_check_type    = "EC2"
+    target_group_arns    = [aws_lb_target_group.wordpress_targetgroup.arn]
 
     # tags used to launch the ec2 instance with
-    tag {
-        key                 = "Name"
-        value               = "asg-ec2-wordpress-${var.application}"
-        propagate_at_launch = true
-    }
-
+    
+    tags = concat(
+      [
+        {
+          "key"                 = "Name"
+          "value"               = "asg-ec2-wordpress-${var.application}"
+          "propagate_at_launch" = true
+        }
+      ],
+      var.addiontal_asg_tags,
+    )
 }
 
 # using a template resource to create the userdata 
@@ -47,21 +54,11 @@ data "template_file" "wordpress_ec2_launch_configuration_userdata" {
     }
 }
 
-# sourcing the ami for the wordpress ec2 instances. 
-data "aws_ami" "wordpress_ami" {
-    most_recent = true
-    owners = var.ami_owners
-    
-    filter {
-        name   = "tag:Name"
-        values = var.ami_name_filter
-    }
-}
-
 # autoscaling group security group
 resource "aws_security_group" "wordpress_ec2_security_group" {
     name = "sgrp-${var.application}"
     vpc_id = var.vpc_id
+    tags = local.common_tags
 
     ingress {
         from_port = 8
@@ -84,6 +81,18 @@ resource "aws_security_group" "wordpress_ec2_security_group" {
     ingress {
         from_port = 22
         to_port = 22
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+    egress {
+        from_port = 80
+        to_port = 80
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+    egress {
+        from_port = 443
+        to_port = 443
         protocol = "tcp"
         cidr_blocks = ["0.0.0.0/0"]
     }
