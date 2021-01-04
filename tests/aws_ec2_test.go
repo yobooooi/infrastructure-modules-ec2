@@ -10,7 +10,7 @@ import (
 
 var aws_region string  = "eu-west-1"
 
-func TestTerraformSSMManagedInstance(t *testing.T) {
+func TestTerraformAWSLaunchConfigSSMManagedInstance(t *testing.T) {
 	terraformOptions := terraform.WithDefaultRetryableErrors(t, &terraform.Options{
 		TerraformDir: "../dev/",
 		TerraformBinary: "terraform",
@@ -25,11 +25,12 @@ func TestTerraformSSMManagedInstance(t *testing.T) {
 
 	aws_asg_name := terraform.Output(t, terraformOptions, "wordpress_asg_name")
 	instance_ids := aws.GetInstanceIdsForAsg(t, aws_asg_name, aws_region)
-	fmt.Sprintf("Autoscaling Group Name:\t%s", aws_asg_name)
-	fmt.Sprintf("InstanceIds:\t%s", instance_ids)
-	// placeholder until GetInstanceIdsFor ASG but is fixed 
-	instance := "i-08938879e85be6de5"
+	fmt.Printf("Autoscaling Group Name:\t%s\n", aws_asg_name)
+	fmt.Printf("InstanceIds:\t%s\n", instance_ids)
 	
 	wait_period, _  := time.ParseDuration("1m30s")
-	aws.WaitForSsmInstance(t, aws_region, instance, wait_period)
+	for _, instance := range instance_ids {
+		aws.WaitForSsmInstance(t, aws_region, instance, wait_period)
+	}
+	
 }
